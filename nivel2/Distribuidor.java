@@ -6,8 +6,8 @@ import java.util.*;
 public class Distribuidor {
     private String nombreDistribuidor;
     private Map<String, SurtidorConectado> surtidores;
-    private Map<String, Double> preciosCombustibles; // Precios centralizados
-    private static final int PUERTO_SURTIDORES = 6000; // Puerto donde escucha el distribuidor
+    private Map<String, Double> preciosCombustibles;
+    private static final int PUERTO_SURTIDORES = 6000;
     private static final String DB_PATH = "/app/data/distribuidor.db";
     private Connection dbConnection;
     private Socket empresaSocket;
@@ -24,20 +24,15 @@ public class Distribuidor {
     
     private void inicializarBaseDatos() {
         try {
-            // Crear directorio si no existe
             File dbFile = new File(DB_PATH);
             File parentDir = dbFile.getParentFile();
             if (!parentDir.exists()) {
                 parentDir.mkdirs();
             }
             
-            // Cargar el driver JDBC de SQLite explícitamente
             Class.forName("org.sqlite.JDBC");
-            
-            // Conectar a la base de datos (se crea si no existe)
             dbConnection = DriverManager.getConnection("jdbc:sqlite:" + DB_PATH);
-            
-            // Crear tablas si no existen
+
             String createTransaccionesSQL = """
                 CREATE TABLE IF NOT EXISTS transacciones (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,7 +56,6 @@ public class Distribuidor {
             stmt.execute(createTransaccionesSQL);
             stmt.execute(createPreciosSQL);
             
-            // Insertar precios por defecto si la tabla está vacía
             String checkPreciosSQL = "SELECT COUNT(*) FROM precios_combustibles";
             var rs = stmt.executeQuery(checkPreciosSQL);
             if (rs.next() && rs.getInt(1) == 0) {
@@ -97,7 +91,6 @@ public class Distribuidor {
     }
     
     private void inicializarPrecios() {
-        // Precios por defecto
         preciosCombustibles.put("93", 100.0);
         preciosCombustibles.put("95", 100.0);
         preciosCombustibles.put("97", 100.0);
@@ -106,7 +99,6 @@ public class Distribuidor {
     }
     
     private void cargarPrecios() {
-        // Cargar precios desde la base de datos
         if (dbConnection == null) {
             System.err.println("[ERROR] No hay conexión a BD, usando precios por defecto");
             return;
@@ -137,7 +129,6 @@ public class Distribuidor {
         }
     }
     
-    // Guardar UN precio específico en la base de datos
     private void guardarPrecio(String tipoCombustible, double precio) {
         if (dbConnection == null) {
             System.err.println("[ERROR] No hay conexión a BD, no se puede guardar precio");
@@ -165,7 +156,6 @@ public class Distribuidor {
         }
     }
     
-    // Guardar TODOS los precios en la base de datos (usado solo para operaciones masivas/mantenimiento)
     @SuppressWarnings("unused")
     private void guardarPrecios() {
         if (dbConnection == null) {
@@ -209,8 +199,6 @@ public class Distribuidor {
         }
     }
     
-    // Métodos de gestión de base de datos
-    
     public void registrarTransaccion(String surtidorId, String tipoCombustible, double litrosConsumidos) {
         if (dbConnection == null) {
             System.err.println("[ERROR] Base de datos no inicializada. No se puede registrar transacción.");
@@ -218,7 +206,6 @@ public class Distribuidor {
         }
         
         try {
-            // Verificar si ya existe un registro para este surtidor y tipo de combustible
             String selectSQL = "SELECT cantidad_cargas, litros_consumidos FROM transacciones WHERE surtidor_id = ? AND tipo_combustible = ?";
             PreparedStatement selectStmt = dbConnection.prepareStatement(selectSQL);
             selectStmt.setString(1, surtidorId);
@@ -226,7 +213,6 @@ public class Distribuidor {
             ResultSet rs = selectStmt.executeQuery();
             
             if (rs.next()) {
-                // Actualizar registro existente
                 int cantidadCargasActual = rs.getInt("cantidad_cargas");
                 double litrosActuales = rs.getDouble("litros_consumidos");
                 
@@ -241,7 +227,6 @@ public class Distribuidor {
                 
                 System.out.println("[DB] Transacción actualizada: Surtidor " + surtidorId + ", " + tipoCombustible + ", +" + litrosConsumidos + "L");
             } else {
-                // Insertar nuevo registro
                 String insertSQL = "INSERT INTO transacciones (surtidor_id, tipo_combustible, litros_consumidos, cantidad_cargas) VALUES (?, ?, ?, ?)";
                 PreparedStatement insertStmt = dbConnection.prepareStatement(insertSQL);
                 insertStmt.setString(1, surtidorId);
@@ -372,7 +357,6 @@ public class Distribuidor {
                     
                     System.out.println("[EMPRESA] Conectado a " + host + ":" + puerto);
                     
-                    // Identificarse ante la empresa
                     String comando = entrada.readLine();
                     if ("IDENTIFICAR".equals(comando)) {
                         empresaSalida.println("ID:" + nombreDistribuidor);
@@ -380,7 +364,6 @@ public class Distribuidor {
                         System.out.println("[EMPRESA] " + respuesta);
                     }
                     
-                    // Escuchar comandos de la empresa
                     String mensaje;
                     while ((mensaje = entrada.readLine()) != null) {
                         if (mensaje.startsWith("PRECIO ")) {
@@ -390,13 +373,11 @@ public class Distribuidor {
                                 try {
                                     double precio = Double.parseDouble(partes[2]);
                                     
-                                    // Actualizar precio local y guardar en BD
                                     preciosCombustibles.put(tipo, precio);
-                                    guardarPrecio(tipo, precio);  // Solo actualizar este precio
+                                    guardarPrecio(tipo, precio);
                                     
                                     System.out.println("[EMPRESA→PRECIOS] " + tipo + " actualizado a $" + precio);
                                     
-                                    // Propagar a todos los surtidores conectados
                                     int surtidoresConectados = surtidores.size();
                                     for (Map.Entry<String, SurtidorConectado> entry : surtidores.entrySet()) {
                                         entry.getValue().enviarComando("PRECIO " + tipo + " " + precio);
@@ -422,7 +403,6 @@ public class Distribuidor {
                     System.err.println("[EMPRESA] Error de conexión: " + e.getMessage());
                 }
                 
-                // Reintentar conexión cada 30 segundos
                 try {
                     Thread.sleep(30000);
                 } catch (InterruptedException ignored) {}
@@ -507,10 +487,8 @@ public class Distribuidor {
         System.out.println("║  DISTRIBUIDOR " + nombre + " - Sistema de Gestión  ║");
         System.out.println("╚═══════════════════════════════════════════════╝\n");
         
-        // Iniciar servidor para recibir surtidores
         new Thread(() -> distribuidor.iniciarServidorSurtidores()).start();
         
-        // Conectar automáticamente a la Empresa (Nivel 3)
         String empresaHost = System.getenv().getOrDefault("EMPRESA_HOST", "empresa");
         int empresaPuerto = Integer.parseInt(System.getenv().getOrDefault("EMPRESA_PORT", "7000"));
         System.out.println("\n[EMPRESA] Conectando a " + empresaHost + ":" + empresaPuerto + "...");
@@ -530,7 +508,6 @@ public class Distribuidor {
                 Socket socket = servidor.accept();
                 System.out.println("[CONEXIÓN] Nuevo surtidor conectado desde: " + socket.getInetAddress());
                 
-                // Crear hilo para manejar este surtidor
                 new Thread(new ManejadorSurtidor(socket, this)).start();
             }
         } catch (IOException e) {
@@ -640,11 +617,9 @@ public class Distribuidor {
         try {
             double precio = Double.parseDouble(sc.nextLine());
             
-            // Actualizar precio en memoria y guardar en BD
             preciosCombustibles.put(tipo, precio);
-            guardarPrecio(tipo, precio);  // Solo actualizar este precio
+            guardarPrecio(tipo, precio);
             
-            // Enviar a todos los surtidores conectados
             int enviados = 0;
             for (Map.Entry<String, SurtidorConectado> entry : surtidores.entrySet()) {
                 entry.getValue().enviarComando("PRECIO " + tipo + " " + precio);
@@ -698,14 +673,13 @@ public class Distribuidor {
              BufferedReader entrada = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter salida = new PrintWriter(socket.getOutputStream(), true)) {
             
-            // Leer y descartar mensaje de bienvenida (no mostrar al usuario)
             String bienvenida;
             while ((bienvenida = entrada.readLine()) != null) {
                 if (bienvenida.contains("Tipos:") || bienvenida.contains("Kerosene")) break;
             }
             
             switch (opcion) {
-                case "1": // Reponer
+                case "1":
                     System.out.print("Tipo de combustible (93, 95, 97, Diesel, Kerosene): ");
                     String tipoReponer = sc.nextLine();
                     System.out.print("Cantidad de litros a reponer: ");
@@ -716,7 +690,7 @@ public class Distribuidor {
                     System.out.println("[ESTANQUE] " + respuestaReponer);
                     break;
                     
-                case "2": // Consultar
+                case "2":
                     System.out.print("Tipo de combustible (93, 95, 97, Diesel, Kerosene): ");
                     String tipoConsultar = sc.nextLine();
                     
@@ -725,7 +699,7 @@ public class Distribuidor {
                     System.out.println("[ESTANQUE] " + respuestaConsultar);
                     break;
                     
-                case "3": // Estado completo
+                case "3":
                     salida.println("ESTADO");
                     System.out.println("\n[ESTANQUE] Estado actual:");
                     String lineaEstado;
@@ -735,7 +709,7 @@ public class Distribuidor {
                     }
                     break;
                     
-                case "4": // Volver
+                case "4":
                     System.out.println("Volviendo al menú principal...");
                     break;
                     
@@ -750,7 +724,6 @@ public class Distribuidor {
         }
     }
     
-    // Clase interna para representar un surtidor conectado
     static class SurtidorConectado {
         private String id;
         private PrintWriter salida;
@@ -769,7 +742,6 @@ public class Distribuidor {
         }
     }
     
-    // Manejador de conexiones de surtidores
     static class ManejadorSurtidor implements Runnable {
         private Socket socket;
         private Distribuidor distribuidor;
@@ -785,7 +757,6 @@ public class Distribuidor {
                 BufferedReader entrada = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter salida = new PrintWriter(socket.getOutputStream(), true)
             ) {
-                // Solicitar ID del surtidor
                 salida.println("IDENTIFICAR");
                 String respuesta = entrada.readLine();
                 
@@ -795,24 +766,20 @@ public class Distribuidor {
                 }
                 
                 String idSurtidor = respuesta.substring(3).trim();
-                
-                // Registrar surtidor
+
                 SurtidorConectado surtidor = new SurtidorConectado(idSurtidor, salida);
                 distribuidor.registrarSurtidor(idSurtidor, surtidor);
                 
                 salida.println("OK: Conectado al distribuidor " + distribuidor.nombreDistribuidor);
-                
-                // Enviar precios actuales al surtidor recién conectado
+
                 distribuidor.enviarPreciosASurtidor(surtidor);
-                
-                // Escuchar mensajes del surtidor
+
                 String mensaje;
                 while ((mensaje = entrada.readLine()) != null) {
                     if (mensaje.equalsIgnoreCase("SALIR")) {
                         break;
                     }
-                    
-                    // Procesar comando TRANSACCION
+
                     if (mensaje.startsWith("TRANSACCION ")) {
                         String[] partes = mensaje.split(" ");
                         if (partes.length == 4) {
@@ -834,11 +801,9 @@ public class Distribuidor {
                         salida.println("ACK");
                         distribuidor.enviarReporteAEmpresa("Surtidor=" + idSurtidor + " " + reporte);
                     } else if (mensaje.startsWith("ID:")) {
-                        // Ignorar - ya se procesó en la identificación inicial
                     } else if (mensaje.startsWith("OK:") || mensaje.startsWith("ERROR:") || mensaje.equals("ACK")) {
                         // Ignorar respuestas informativas del surtidor
                     } else if (!mensaje.trim().isEmpty()) {
-                        // Solo registrar mensajes no vacíos que no sean comandos conocidos
                         System.out.println("[" + idSurtidor + "] " + mensaje);
                     }
                 }

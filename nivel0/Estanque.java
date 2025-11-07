@@ -78,7 +78,6 @@ public class Estanque {
         
         System.out.println("=== SERVIDOR ESTANQUE DE COMBUSTIBLE ===");
         
-        // Intentar cargar estado previo
         File archivo = new File(archivoEstado);
         if (archivo.exists()) {
             try {
@@ -91,7 +90,6 @@ public class Estanque {
         } else {
             System.out.println("[INFO] No existe archivo de estado, iniciando con valores por defecto");
             try {
-                // Crear directorio si no existe
                 new File("/app/data").mkdirs();
                 estanque.guardarEstado(archivoEstado);
             } catch (IOException e) {
@@ -103,11 +101,10 @@ public class Estanque {
         estanque.mostrarEstado();
         System.out.println("\nEscuchando en puerto " + puerto + "...\n");
         
-        // Hilo para guardar estado periódicamente (cada 30 segundos)
         Thread guardadoAutomatico = new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(30000); // 30 segundos
+                    Thread.sleep(30000);
                     estanque.guardarEstadoAutomatico();
                     System.out.println("[AUTO-SAVE] Estado guardado automáticamente");
                 } catch (InterruptedException e) {
@@ -127,7 +124,6 @@ public class Estanque {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            // Guardar estado al cerrar
             try {
                 estanque.guardarEstado(archivoEstado);
                 System.out.println("[SHUTDOWN] Estado guardado");
@@ -200,7 +196,6 @@ class ManejadorCliente implements Runnable {
                                 salida.println("OK: Extraídos " + litrosExtraer + " litros de " + tipoExtraer + 
                                              ". Nivel actual: " + estanque.getNivel(tipoExtraer) + " litros");
                                 System.out.println("[OPERACIÓN] Extraídos " + litrosExtraer + " L de " + tipoExtraer);
-                                // Guardar estado después de la operación
                                 guardarEstado();
                             } else {
                                 salida.println("ERROR: No hay suficiente combustible o tipo inválido. Disponible: " + 
@@ -227,7 +222,6 @@ class ManejadorCliente implements Runnable {
                                 salida.println("OK: Repuestos " + litrosReponer + " litros de " + tipoReponer + 
                                              ". Nivel actual: " + estanque.getNivel(tipoReponer) + " litros");
                                 System.out.println("[OPERACIÓN] Repuestos " + litrosReponer + " L de " + tipoReponer);
-                                // Guardar estado después de la operación
                                 guardarEstado();
                             } else {
                                 salida.println("ERROR: Tipo de combustible inválido");
