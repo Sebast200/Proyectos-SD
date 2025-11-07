@@ -18,7 +18,6 @@ public class Empresa {
     }
     
     private void inicializarPrecios() {
-        // Precios por defecto de la empresa
         preciosCombustibles.put("93", 100.0);
         preciosCombustibles.put("95", 110.0);
         preciosCombustibles.put("97", 120.0);
@@ -107,10 +106,8 @@ public class Empresa {
         System.out.println("║  EMPRESA " + nombre + " - Nivel 3  ║");
         System.out.println("╚═════════════════════════════════════════╝\n");
         
-        // Iniciar servidor para recibir distribuidores
         new Thread(() -> empresa.iniciarServidorDistribuidores()).start();
         
-        // Menú de comandos
         empresa.menuPrincipal(sc);
     }
     
@@ -122,7 +119,6 @@ public class Empresa {
                 Socket socket = servidor.accept();
                 System.out.println("[CONEXIÓN] Nuevo distribuidor conectado desde: " + socket.getInetAddress());
                 
-                // Crear hilo para manejar este distribuidor
                 new Thread(new ManejadorDistribuidor(socket, this)).start();
             }
         } catch (IOException e) {
@@ -206,10 +202,8 @@ public class Empresa {
         try {
             double precio = Double.parseDouble(sc.nextLine());
             
-            // Actualizar precio en memoria
             preciosCombustibles.put(tipo, precio);
             
-            // Guardar en archivo
             guardarPrecios();
             
             System.out.println("✓ Precio corporativo actualizado y guardado");
@@ -243,7 +237,6 @@ public class Empresa {
             }
         }
         
-        // Guardar en archivo
         guardarPrecios();
         
         System.out.println("\n✓ Precios corporativos actualizados");
@@ -255,7 +248,6 @@ public class Empresa {
         }
     }
     
-    // Clase interna para representar un distribuidor conectado
     static class DistribuidorConectado {
         private String id;
         private PrintWriter salida;
@@ -273,8 +265,7 @@ public class Empresa {
             return id;
         }
     }
-    
-    // Manejador de conexiones de distribuidores
+
     static class ManejadorDistribuidor implements Runnable {
         private Socket socket;
         private Empresa empresa;
@@ -290,7 +281,6 @@ public class Empresa {
                 BufferedReader entrada = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter salida = new PrintWriter(socket.getOutputStream(), true)
             ) {
-                // Solicitar ID del distribuidor
                 salida.println("IDENTIFICAR");
                 String respuesta = entrada.readLine();
                 
@@ -301,16 +291,11 @@ public class Empresa {
                 
                 String idDistribuidor = respuesta.substring(3).trim();
                 
-                // Registrar distribuidor
                 DistribuidorConectado distribuidor = new DistribuidorConectado(idDistribuidor, salida);
                 empresa.registrarDistribuidor(idDistribuidor, distribuidor);
-                
                 salida.println("OK: Conectado a empresa " + empresa.nombreEmpresa);
-                
-                // Enviar precios actuales al distribuidor recién conectado
                 empresa.enviarPreciosADistribuidor(distribuidor);
                 
-                // Escuchar mensajes del distribuidor
                 String mensaje;
                 while ((mensaje = entrada.readLine()) != null) {
                     if (mensaje.equalsIgnoreCase("SALIR")) {
@@ -319,7 +304,6 @@ public class Empresa {
                     
                     System.out.println("[" + idDistribuidor + "] " + mensaje);
                     
-                    // Responder si es necesario
                     if (mensaje.startsWith("REPORTE:")) {
                         salida.println("ACK");
                     }
