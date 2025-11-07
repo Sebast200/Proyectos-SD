@@ -129,13 +129,19 @@ public class InterfazGrafica extends JFrame {
 
         JTable tabla = new JTable(reportesModel);
         JScrollPane sp = new JScrollPane(tabla);
-        sp.setBorder(BorderFactory.createTitledBorder("Reportes / Mensajes recibidos"));
+        sp.setBorder(BorderFactory.createTitledBorder("Último reporte recibido de la Empresa"));
         root.add(sp, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+
+        JButton mostrar = new JButton("📄 Mostrar último reporte");
+        mostrar.addActionListener(e -> mostrarUltimoReporte());
+        bottom.add(mostrar);
+
         JButton exportar = new JButton("💾 Exportar CSV");
-        exportar.addActionListener(e -> exportarTablaCSV(reportesModel, "reportes_export.csv"));
+        exportar.addActionListener(e -> exportarTablaCSV(reportesModel, "reporte_empresa.csv"));
         bottom.add(exportar);
+
         root.add(bottom, BorderLayout.SOUTH);
 
         return root;
@@ -268,11 +274,44 @@ public class InterfazGrafica extends JFrame {
     // ====================== Recepción / Consola / Reportes ======================
 
     private void onMensajeRecibido(String fromId, String payload) {
-        // Consola: mostrar exactamente como llega (sin etiquetas, sin timestamps)
+        // Consola: mostrar exactamente como llega (sin etiquetas ni timestamps)
         logRaw(payload);
-        // Tabla de reportes: guardar literal
-        reportesModel.addRow(new Object[]{fromId, payload});
+
+        if (EMPRESA_ID.equals(fromId)) {
+            // Agregar el nuevo reporte sin borrar los anteriores
+            SwingUtilities.invokeLater(() -> {
+                reportesModel.addRow(new Object[]{fromId, payload});
+            });
+        }
     }
+
+    private void mostrarUltimoReporte() {
+        if (reportesModel.getRowCount() == 0) {
+            logWarn("No hay reportes disponibles para mostrar.");
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < reportesModel.getRowCount(); i++) {
+            String nodo = (String) reportesModel.getValueAt(i, 0);
+            String contenido = (String) reportesModel.getValueAt(i, 1);
+            sb.append("[").append(nodo).append("] ").append(contenido).append("\n\n");
+        }
+
+        JTextArea area = new JTextArea(sb.toString(), 20, 60);
+        area.setEditable(false);
+        area.setWrapStyleWord(true);
+        area.setLineWrap(true);
+
+        JScrollPane scroll = new JScrollPane(area);
+        scroll.setPreferredSize(new Dimension(700, 400));
+
+        JOptionPane.showMessageDialog(this, scroll,
+                "Historial completo de reportes recibidos",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+
 
     // ========================= Logging (sin timestamps/etiquetas) =========================
 
