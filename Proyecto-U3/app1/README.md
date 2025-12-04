@@ -1,4 +1,2 @@
 para ejecutar app1
-docker compose up -d galera-node-1
-sleep 10
-docker compose up -d galera-node-2 galera-node-3 proxysql backend frontend
+docker compose up -d galera-node-1 && sleep 10 && docker compose up -d galera-node-2 galera-node-3 proxysql && sleep 10 && docker compose up -d backend frontend nginx-backend nginx-frontend && docker compose up -d --scale backend=2 --scale frontend=2

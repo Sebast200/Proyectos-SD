@@ -17,8 +17,8 @@ mysql_variables=
 
 mysql_servers =
 (
-  { address = "galera-node-1" , port = 3306 , hostgroup = 0 }
-  { address = "galera-node-2" , port = 3306 , hostgroup = 0 }
+  { address = "galera-node-1" , port = 3306 , hostgroup = 0 },
+  { address = "galera-node-2" , port = 3306 , hostgroup = 0 },
   { address = "galera-node-3" , port = 3306 , hostgroup = 0 }
 )
 
