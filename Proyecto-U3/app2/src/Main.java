@@ -8,4 +8,6 @@ public class Main {
     }
 }
 
-// Ejecutar con javac -encoding UTF-8 -cp "src;lib/postgresql-42.7.3.jar" -d bin src/*.java / java -cp "bin;lib/postgresql-42.7.3.jar" Main
+// Ejecutar con java directamente desde terminal ubicado en la carpeta de la aplicación: javac -encoding UTF-8 -cp "src;lib/postgresql-42.7.3.jar" -d bin src/*.java 
+// Y luego
+// java -cp "bin;lib/postgresql-42.7.3.jar" Main
