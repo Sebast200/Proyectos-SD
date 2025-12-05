@@ -133,6 +133,12 @@ psql -h localhost -p 5001 -U admin -d hospital_db
 - **GTID Mode**: Habilitado en todos los nodos
 - **Binlog Format**: ROW
 
+### Visualización de la aplicación
+- Para poder interactuar con la interfaz grafica se requiere instalar XLAUNCH en windows
+- https://sourceforge.net/projects/vcxsrv/
+- Debes seguir la siguiente configuracion al momento de iniciarla: Selecciona "Multiple windows", Start no client, marcar clipboard y Disable access control. Se debe mantener la aplicacion abierta 
+en segundo plano cuando levantes los contenedores.
+
 ### Iniciar App 3
 ```bash
 docker compose up -d mysql-master mysql-replica1 mysql-replica2 mysql-replica3 \
